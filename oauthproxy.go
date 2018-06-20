@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/bitly/oauth2_proxy/cookie"
-	"github.com/bitly/oauth2_proxy/providers"
+	"github.com/getyourguide/oauth2_proxy/cookie"
+	"github.com/getyourguide/oauth2_proxy/providers"
 	"github.com/mbland/hmacauth"
 )
 
@@ -709,7 +709,7 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
-	}	
+	}
 	if p.SetIdToken && session.IdToken != "" {
 		rw.Header().Set("X-Forwarded-Id-Token", session.IdToken)
 	}

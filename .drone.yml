@@ -1,0 +1,11 @@
+pipeline:
+  oauth2_proxy_image:
+    image: hub.gyg.io/drone-plugins/gyg-registry
+    privileged: true
+    context: ./
+    dockerfile: Dockerfile
+    repo: hub.gyg.io/devops/oauth2_proxy
+    tags:
+      - latest
+    when:
+      branch: master

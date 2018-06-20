@@ -1,0 +1,6 @@
+export OAUTH2_PROXY_CLIENT_ID=1082809994824-7ji99qfqnf0p2lgvsk1pobgpgpq2vp9b.apps.googleusercontent.com
+export OAUTH2_PROXY_CLIENT_SECRET=wKn5XUFAickp1NxcduIIi92F
+#export OAUTH2_PROXY_UPSTREAM=http://localhost:8081/
+export OAUTH2_PROXY_UPSTREAM=http://host.docker.internal:8081/
+export OAUTH2_PROXY_COOKIE_SECURE=false
+export OAUTH2_PROXY_PASS_ACCESS_TOKEN=true
