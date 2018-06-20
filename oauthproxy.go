@@ -30,6 +30,7 @@ var SignatureHeaders []string = []string{
 	"X-Forwarded-User",
 	"X-Forwarded-Email",
 	"X-Forwarded-Access-Token",
+	"X-Forwarded-Id-Token",
 	"Cookie",
 	"Gap-Auth",
 }
@@ -66,6 +67,7 @@ type OAuthProxy struct {
 	PassUserHeaders     bool
 	BasicAuthPassword   string
 	PassAccessToken     bool
+	SetIdToken          bool
 	CookieCipher        *cookie.Cipher
 	skipAuthRegex       []string
 	skipAuthPreflight   bool
@@ -163,7 +165,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 	log.Printf("Cookie settings: name:%s secure(https):%v httponly:%v expiry:%s domain:%s refresh:%s", opts.CookieName, opts.CookieSecure, opts.CookieHttpOnly, opts.CookieExpire, opts.CookieDomain, refresh)
 
 	var cipher *cookie.Cipher
-	if opts.PassAccessToken || (opts.CookieRefresh != time.Duration(0)) {
+	if opts.PassAccessToken || opts.SetIdToken || (opts.CookieRefresh != time.Duration(0)) {
 		var err error
 		cipher, err = cookie.NewCipher(secretBytes(opts.CookieSecret))
 		if err != nil {
@@ -202,6 +204,7 @@ func NewOAuthProxy(opts *Options, validator func(string) bool) *OAuthProxy {
 		PassUserHeaders:    opts.PassUserHeaders,
 		BasicAuthPassword:  opts.BasicAuthPassword,
 		PassAccessToken:    opts.PassAccessToken,
+		SetIdToken:         opts.SetIdToken,
 		SkipProviderButton: opts.SkipProviderButton,
 		CookieCipher:       cipher,
 		templates:          loadTemplates(opts.CustomTemplatesDir),
@@ -645,6 +648,15 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 		}
 	}
 
+	if saveSession && !revalidated && session != nil && session.IdToken != "" {
+		if !p.provider.ValidateSessionState(session) {
+			log.Printf("%s removing session. error validating %s", remoteAddr, session)
+			saveSession = false
+			session = nil
+			clearSession = true
+		}
+	}
+
 	if session != nil && session.Email != "" && !p.Validator(session.Email) {
 		log.Printf("%s Permission Denied: removing session %s", remoteAddr, session)
 		session = nil
@@ -697,6 +709,9 @@ func (p *OAuthProxy) Authenticate(rw http.ResponseWriter, req *http.Request) int
 	}
 	if p.PassAccessToken && session.AccessToken != "" {
 		req.Header["X-Forwarded-Access-Token"] = []string{session.AccessToken}
+	}	
+	if p.SetIdToken && session.IdToken != "" {
+		rw.Header().Set("X-Forwarded-Id-Token", session.IdToken)
 	}
 	if session.Email == "" {
 		rw.Header().Set("GAP-Auth", session.User)

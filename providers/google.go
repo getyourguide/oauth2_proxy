@@ -142,6 +142,7 @@ func (p *GoogleProvider) Redeem(redirectURL, code string) (s *SessionState, err 
 	}
 	s = &SessionState{
 		AccessToken:  jsonResponse.AccessToken,
+		IdToken:      jsonResponse.IdToken,
 		ExpiresOn:    time.Now().Add(time.Duration(jsonResponse.ExpiresIn) * time.Second).Truncate(time.Second),
 		RefreshToken: jsonResponse.RefreshToken,
 		Email:        email,
@@ -254,7 +255,7 @@ func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 		return false, nil
 	}
 
-	newToken, duration, err := p.redeemRefreshToken(s.RefreshToken)
+	newToken, newIdToken, duration, err := p.redeemRefreshToken(s.RefreshToken)
 	if err != nil {
 		return false, err
 	}
@@ -266,12 +267,13 @@ func (p *GoogleProvider) RefreshSessionIfNeeded(s *SessionState) (bool, error) {
 
 	origExpiration := s.ExpiresOn
 	s.AccessToken = newToken
+	s.IdToken = newIdToken
 	s.ExpiresOn = time.Now().Add(duration).Truncate(time.Second)
 	log.Printf("refreshed access token %s (expired on %s)", s, origExpiration)
 	return true, nil
 }
 
-func (p *GoogleProvider) redeemRefreshToken(refreshToken string) (token string, expires time.Duration, err error) {
+func (p *GoogleProvider) redeemRefreshToken(refreshToken string) (token string, id_token string, expires time.Duration, err error) {
 	// https://developers.google.com/identity/protocols/OAuth2WebServer#refresh
 	params := url.Values{}
 	params.Add("client_id", p.ClientID)
@@ -304,12 +306,14 @@ func (p *GoogleProvider) redeemRefreshToken(refreshToken string) (token string, 
 	var data struct {
 		AccessToken string `json:"access_token"`
 		ExpiresIn   int64  `json:"expires_in"`
+		IdToken     string `json:"id_token"`
 	}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
 		return
 	}
 	token = data.AccessToken
+	id_token = data.IdToken
 	expires = time.Duration(data.ExpiresIn) * time.Second
 	return
 }
