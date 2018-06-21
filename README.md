@@ -406,8 +406,11 @@ server {
     # requires running with --set-xauthrequest flag
     auth_request_set $user   $upstream_http_x_auth_request_user;
     auth_request_set $email  $upstream_http_x_auth_request_email;
+    auth_request_set $id_token  $upstream_http_x_forwarded_id_token;
+    
     proxy_set_header X-User  $user;
     proxy_set_header X-Email $email;
+    proxy_set_header Authorization "Bearer $id_token";
 
     # if you enabled --cookie-refresh, this is needed for it to work with auth_request
     auth_request_set $auth_cookie $upstream_http_set_cookie;
